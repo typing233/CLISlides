@@ -39,8 +39,15 @@ package main
 import "fmt"
 
 func main() {
-    fmt.Println("Hello, CLISlides!")
+    fmt.Println("Hello from Go!")
 }
+```
+
+And a Python snippet:
+
+```python
+import sys
+print(f"Python {sys.version_info.major}.{sys.version_info.minor} says hello!")
 ```
 
 Press `e` to execute code blocks!

@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func TestSplitSlides(t *testing.T) {
@@ -183,6 +185,65 @@ func TestNumericBuffer(t *testing.T) {
 	n = m.consumeNumericOr(1)
 	if n != 1 {
 		t.Errorf("expected default 1, got %d", n)
+	}
+}
+
+func TestNKeyWithoutSearch(t *testing.T) {
+	slides := []Slide{{Raw: "# One"}, {Raw: "# Two"}, {Raw: "# Three"}}
+	m := newModel(slides, Metadata{}, false)
+	m.width = 80
+	m.height = 24
+
+	m.advance(0)
+	if m.current != 0 {
+		t.Fatalf("expected start at 0")
+	}
+
+	// N without search results should advance
+	key := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'N'}}
+	result, _ := m.Update(key)
+	m = result.(model)
+	if m.current != 1 {
+		t.Errorf("N without search: expected current=1, got %d", m.current)
+	}
+}
+
+func TestNKeyWithSearch(t *testing.T) {
+	slides := []Slide{{Raw: "# AAA"}, {Raw: "# BBB"}, {Raw: "# AAA again"}}
+	m := newModel(slides, Metadata{}, false)
+	m.width = 80
+	m.height = 24
+
+	// Simulate search results for "AAA"
+	m.searchResults = []int{0, 2}
+	m.searchIndex = 0
+	m.searchQuery = "AAA"
+
+	// N with search results should go to prev match
+	key := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'N'}}
+	result, _ := m.Update(key)
+	m = result.(model)
+	if m.current != 2 {
+		t.Errorf("N with search: expected current=2 (prev match wraps to last), got %d", m.current)
+	}
+}
+
+func TestMetadataAffectsStatusBar(t *testing.T) {
+	slides := []Slide{{Raw: "# Test"}}
+	meta := Metadata{Title: "My Talk", Author: "Alice", Date: "2024"}
+	m := newModel(slides, meta, false)
+	m.width = 80
+	m.height = 24
+
+	bar := m.buildStatusBar()
+	if !contains(bar, "My Talk") {
+		t.Errorf("status bar should contain title, got: %s", bar)
+	}
+	if !contains(bar, "Alice") {
+		t.Errorf("status bar should contain author, got: %s", bar)
+	}
+	if !contains(bar, "2024") {
+		t.Errorf("status bar should contain date, got: %s", bar)
 	}
 }
 

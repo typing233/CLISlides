@@ -35,14 +35,12 @@ func renderSlide(raw string, width int, theme string) string {
 	}
 
 	switch theme {
-	case "dark":
-		opts = append(opts, glamour.WithAutoStyle())
 	case "light":
-		opts = append(opts, glamour.WithAutoStyle())
-	case "notty":
-		opts = append(opts, glamour.WithAutoStyle())
+		opts = append(opts, glamour.WithStylePath("light"))
+	case "ascii", "notty":
+		opts = append(opts, glamour.WithStylePath("notty"))
 	default:
-		opts = append(opts, glamour.WithAutoStyle())
+		opts = append(opts, glamour.WithStylePath("dark"))
 	}
 
 	r, err := glamour.NewTermRenderer(opts...)
@@ -114,18 +112,50 @@ func (m model) buildStatusBar() string {
 
 	pagination := m.paginationStr()
 
-	var extra string
-	if m.numericBuffer != "" {
-		extra = fmt.Sprintf(" │ %s…", m.numericBuffer)
-	}
-	if m.pendingG {
-		extra += " │ g…"
-	}
-	if len(m.searchResults) > 0 && m.searchQuery != "" {
-		extra += fmt.Sprintf(" │ /%s [%d/%d]", m.searchQuery, m.searchIndex+1, len(m.searchResults))
+	var parts []string
+	if pagination != "" {
+		parts = append(parts, pagination)
 	}
 
-	return style.Render(fmt.Sprintf(" %s%s │ ←/→ nav │ /search │ e exec │ q quit ", pagination, extra))
+	var metaInfo string
+	if m.metadata.Title != "" {
+		metaInfo = m.metadata.Title
+	}
+	if m.metadata.Author != "" {
+		if metaInfo != "" {
+			metaInfo += " · "
+		}
+		metaInfo += m.metadata.Author
+	}
+	if m.metadata.Date != "" {
+		if metaInfo != "" {
+			metaInfo += " · "
+		}
+		metaInfo += m.metadata.Date
+	}
+	if metaInfo != "" {
+		parts = append(parts, metaInfo)
+	}
+
+	if m.numericBuffer != "" {
+		parts = append(parts, fmt.Sprintf("%s…", m.numericBuffer))
+	}
+	if m.pendingG {
+		parts = append(parts, "g…")
+	}
+	if len(m.searchResults) > 0 && m.searchQuery != "" {
+		parts = append(parts, fmt.Sprintf("/%s [%d/%d]", m.searchQuery, m.searchIndex+1, len(m.searchResults)))
+	}
+
+	left := " " + strings.Join(parts, " │ ")
+	right := "←/→ nav │ /search │ e exec │ q quit "
+
+	gap := m.width - lipgloss.Width(left) - lipgloss.Width(right)
+	if gap < 1 {
+		gap = 1
+	}
+
+	return style.Render(left + strings.Repeat(" ", gap) + right)
 }
 
 func (m model) paginationStr() string {

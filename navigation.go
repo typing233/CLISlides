@@ -83,9 +83,17 @@ func (m model) handleKeyNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.searchInput.SetValue("")
 		return m, m.searchInput.Cursor.BlinkCmd()
 	case "n":
-		m.nextSearchMatch()
+		if len(m.searchResults) > 0 {
+			m.nextSearchMatch()
+		} else {
+			m.advance(m.consumeNumericOr(1))
+		}
 	case "N":
-		m.prevSearchMatch()
+		if len(m.searchResults) > 0 {
+			m.prevSearchMatch()
+		} else {
+			m.advance(m.consumeNumericOr(1))
+		}
 	case "p", "left", "h", "k":
 		m.retreat(m.consumeNumericOr(1))
 	case "right", "l", "j", " ", "enter":
